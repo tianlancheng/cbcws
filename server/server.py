@@ -18,12 +18,16 @@ mongo = PyMongo(app)
 @app.route('/service',methods=['POST'])
 @require_json('image')
 def add_service():
-	data = json.loads(request.get_data())
-	image=data['image']
-	command=data.get('command')
-	kwargs=data.get('kwargs')
-	service=dockerClient.services.create(image, command=command, **kwargs)
-	return jsonify(status=200, msg='add service success', data={'id':service.short_id,'name':service.name}), 200
+	try:
+		data = json.loads(request.get_data())
+		image=data['image']
+		command=data.get('command')
+		kwargs=data.get('kwargs')
+		service=dockerClient.services.create(image, command=command, **kwargs)
+		return jsonify(status=200, msg='add service success', data={'id':service.short_id,'name':service.name}), 200
+	except Exception as e:
+		print e
+	return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/service/<id>',methods=['PUT'])
 def update_service(id):
@@ -32,12 +36,16 @@ def update_service(id):
 		service=dockerClient.services.get(id)
 	except:
 		return jsonify(status=400, msg='does not exist', data=None), 400
-	kwargs=data.get('kwargs')
-	mode_obj=kwargs.pop('mode')
-	mode=docker.types.ServiceMode(mode_obj['mode'],mode_obj['replicas'])
-	kwargs['mode']=mode
-	res=service.update(**kwargs)
-	return jsonify(status=200, msg='update service success', data=None), 200
+	try:
+		kwargs=data.get('kwargs')
+		mode_obj=kwargs.pop('mode')
+		mode=docker.types.ServiceMode(mode_obj['mode'],mode_obj['replicas'])
+		kwargs['mode']=mode
+		res=service.update(**kwargs)
+		return jsonify(status=200, msg='update service success', data=None), 200
+	except Exception as e:
+		print e
+	return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/service/<id>',methods=['DELETE'])
 def delete_service(id):
