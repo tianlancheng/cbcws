@@ -1,0 +1,59 @@
+For cbcws manager
+
+1.install docker(ubuntu)
+$sudo apt-get update
+
+$sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+
+$curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+$ sudo apt-key fingerprint 0EBFCD88
+
+$ sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+$ sudo apt-get update
+
+$ sudo apt-get install docker-ce
+
+$sudo usermod -aG docker $USER
+
+2.install nfs
+$sudo apt install nfs-kernel-server
+
+$sudo vi /etc/exports
+#/etc/exports文件的内容如下：
+/nfs-data *(rw,sync,no_subtree_check,no_root_squash)
+
+#创建共享目录
+$sudo mkdir -p /tmp
+
+#重启nfs服务：
+$sudo service nfs-kernel-server restart
+
+#显示已经mount到本机nfs目录的客户端机器。
+$sudo showmount -e localhost
+
+#将配置文件中的目录全部重新export一次！无需重启服务。
+$sudo exportfs -rv
+
+3.install mongodb
+$sudo apt-get install mongodb
+
+
+For cbcws worker
+
+1.install docker
+
+2.安装nfs客户端工具
+$sudo apt install nfs-common
+
+3.创建volume 连接nfs服务器
+$docker volume create --driver local --opt type=nfs --opt o=addr=192.168.0.102,rw --opt device=:/nfs-data --name nfs-volume
+
