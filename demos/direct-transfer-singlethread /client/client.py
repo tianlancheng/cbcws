@@ -16,7 +16,7 @@ def socket_client(i):
         except socket.error as msg:
             print msg
             sys.exit(1)
-  
+
         # 定义定义文件信息。128s表示文件名为128bytes长，l表示一个int或log文件类型，在此为文件大小
         fileinfo_size = struct.calcsize('128sl')
         # 定义文件头信息，包含文件名和文件大小
@@ -38,6 +38,6 @@ def socket_client(i):
 
 if __name__ == '__main__':
     i=1
-    while(i<=100):
+    while(i<=10):
         socket_client(i)
         i=i+1

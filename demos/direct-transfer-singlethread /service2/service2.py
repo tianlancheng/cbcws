@@ -24,53 +24,51 @@ def socket_service():
 
     while 1:
         conn, addr = s.accept()
-        msg=conn.recv(1024)
-        if msg == 'stop':
-            conn.close()
-            time.sleep(2)
-            break
-        deal_data(conn,addr)
-        # time.sleep(0.1)
-
-def deal_data(conn, addr):
-    #conn.settimeout(500)
-
-    while 1:
-        fileinfo_size = struct.calcsize('128sl')
-        buf = conn.recv(fileinfo_size)
+        buf = conn.recv(struct.calcsize('128sl'))
         if buf:
             filename, filesize = struct.unpack('128sl', buf)
-            fn = filename.strip('\00')
-            new_filename = os.path.join('./data', fn)
+            if filename == 'stop':
+                conn.close()
+                time.sleep(2)
+                break
+            deal_data(conn,filename, filesize)
+        else:
+            conn.close()
+        # time.sleep(0.1)
 
-            recvd_size = 0  # 定义已接收文件的大小
-            fp = open(new_filename, 'wb')
+def deal_data(conn,filename, filesize):
+    #conn.settimeout(500)
+    
+    fn = filename.strip('\00')
+    mkdir('mydata')
+    new_filename = os.path.join('./mydata', fn)
 
-            while not recvd_size == filesize:
-                if filesize - recvd_size > 1024:
-                    data = conn.recv(1024)
-                    recvd_size += len(data)
-                else:
-                    data = conn.recv(filesize - recvd_size)
-                    recvd_size = filesize
-                fp.write(data)
-            fp.close()
-        conn.close()
-        text_watermark(new_filename,new_filename)
-        sendfile(new_filename)
-        print fn,'{:.3f}'.format(time.time())
-        break
+    recvd_size = 0  # 定义已接收文件的大小
+    fp = open(new_filename, 'wb')
+
+    while not recvd_size == filesize:
+        if filesize - recvd_size > 1024:
+            data = conn.recv(1024)
+            recvd_size += len(data)
+        else:
+            data = conn.recv(filesize - recvd_size)
+            recvd_size = filesize
+        fp.write(data)
+    fp.close()
+    conn.close()
+    text_watermark(new_filename,new_filename)
+    sendfile(new_filename)
+    print fn,'{:.3f}'.format(time.time())
 
 def sendfile(filepath):
     if os.path.isfile(filepath):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('127.0.0.1', 7002))
+            s.connect(('127.0.0.1', 7003))
         except socket.error as msg:
             print msg
             sys.exit(1)
 
-        s.send('start')
         # 定义定义文件信息。128s表示文件名为128bytes长，l表示一个int或log文件类型，在此为文件大小
         fileinfo_size = struct.calcsize('128sl')
         # 定义文件头信息，包含文件名和文件大小
@@ -115,6 +113,16 @@ def text_watermark(img_path, out_path, text="logo",angle=23, opacity=0.50):
     watermark.putalpha(alpha)  
     Image.composite(watermark, img, watermark).save(out_path) 
 
+def mkdir(path):
+    import os
+    path=path.strip()
+    path=path.rstrip("\\")
+    isExists=os.path.exists(path)
+    if not isExists:
+        os.makedirs(path) 
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     socket_service()
