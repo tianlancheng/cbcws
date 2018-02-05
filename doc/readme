@@ -57,3 +57,4 @@ $sudo apt install nfs-common
 3.创建volume 连接nfs服务器
 $docker volume create --driver local --opt type=nfs --opt o=addr=192.168.0.102,rw --opt device=:/nfs-data --name nfs-volume
 
+#docker run --mount src=nfs-volume,dst=/nfs-data ubuntu:16.04
