@@ -10,7 +10,7 @@ import datetime,time
 from concurrent import futures
 
 app = Flask(__name__)
-app.config['serverUrl']='http://192.168.8.128:5000/agent/register'
+app.config['serverUrl']='http://192.168.33.10:5000/agent/register'
 app.config['myport']=5001
 
 dockerClient=docker.DockerClient(base_url='unix://var/run/docker.sock', version='1.35')

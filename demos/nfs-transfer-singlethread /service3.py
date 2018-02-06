@@ -13,7 +13,7 @@ import logging
 LOG_FORMAT = "%(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
-pool = redis.ConnectionPool(host='192.168.0.104',port=6379,decode_responses=True)
+pool = redis.ConnectionPool(host='192.168.33.10',port=6379,decode_responses=True)
 rcon = redis.Redis(connection_pool=pool)
 
 def listen_task():

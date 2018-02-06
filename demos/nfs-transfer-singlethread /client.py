@@ -8,7 +8,7 @@ import shutil
 import logging
 LOG_FORMAT = "%(message)s"
 
-pool = redis.ConnectionPool(host='192.168.0.104',port=6379,db=0)
+pool = redis.ConnectionPool(host='192.168.33.10',port=6379,db=0)
 rcon = redis.StrictRedis(connection_pool=pool)
 
 
