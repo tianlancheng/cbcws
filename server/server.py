@@ -19,7 +19,7 @@ mongo = PyMongo(app)
 @require_json('image')
 def add_service():
 	try:
-		data = json.loads(request.get_data())
+		data = json.loads(request.get_data().decode('utf-8'))
 		image=data['image']
 		command=data.get('command')
 		kwargs=data.get('kwargs')
@@ -31,7 +31,7 @@ def add_service():
 
 @app.route('/service/<id>',methods=['PUT'])
 def update_service(id):
-	data = json.loads(request.get_data())
+	data = json.loads(request.get_data().decode('utf-8'))
 	try:
 		service=dockerClient.services.get(id)
 	except:
@@ -82,7 +82,7 @@ def agent_register():
 	try:
 		ip=request.remote_addr
 		print('register:'+ip)
-		data = json.loads(request.get_data())
+		data = json.loads(request.get_data().decode('utf-8'))
 		host_set=mongo.db.host_set
 		
 		host=host_set.find_one({'ip':ip})
