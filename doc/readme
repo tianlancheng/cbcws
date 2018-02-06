@@ -53,14 +53,17 @@ $ sudo apt-get install redis-server
 5.初始化swarm管理节点
 docker swarm init --listen-addr 192.168.33.10:2377 --advertise-addr 192.168.33.10
 
-6.启动测试服务
-docker service create --name service1-dts  -p 7001:7001 --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service1.py
-docker service create --name service2-dts --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service2.py
-docker service create --name service3-dts --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service3.py
 
-docker service create --name service1-dtm  -p 7001:7001 --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service1.py
-docker service create --name service2-dtm --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service2.py
-docker service create --name service3-dtm --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service3.py
+6.启动测试服务
+docker network create -d overlay test
+
+docker service create --name service1-dts --constraint 'node.role==worker' -p 7001:7001 --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service1.py
+docker service create --name service2-dts --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service2.py
+docker service create --name service3-dts --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service3.py
+
+docker service create --name service1-dtm --constraint 'node.role==worker' -p 7001:7001 --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service1.py
+docker service create --name service2-dtm --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service2.py
+docker service create --name service3-dtm --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service3.py
 
 
 For cbcws worker
@@ -73,4 +76,4 @@ $sudo apt install nfs-common
 3.创建volume 连接nfs服务器
 $docker volume create --driver local --opt type=nfs --opt o=addr=192.168.33.10,rw --opt device=:/nfs-data --name nfs-volume
 
-#docker run --mount src=nfs-volume,dst=/nfs-data ubuntu:16.04
+#docker run -it --rm --mount src=nfs-volume,dst=/nfs-data ubuntu:16.04 /bin/bash

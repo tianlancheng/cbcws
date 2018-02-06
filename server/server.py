@@ -26,7 +26,7 @@ def add_service():
 		service=dockerClient.services.create(image, command=command, **kwargs)
 		return jsonify(status=200, msg='add service success', data={'id':service.short_id,'name':service.name}), 200
 	except Exception as e:
-		print e
+		print(e)
 	return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/service/<id>',methods=['PUT'])
@@ -44,7 +44,7 @@ def update_service(id):
 		res=service.update(**kwargs)
 		return jsonify(status=200, msg='update service success', data=None), 200
 	except Exception as e:
-		print e
+		print(e)
 	return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/service/<id>',methods=['DELETE'])
@@ -56,7 +56,7 @@ def delete_service(id):
 		if service.remove():
 			return jsonify(status=200, msg='delete service success', data=None), 200
 	except Exception as e:
-		print e
+		print(e)
 	return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/services',methods=['GET'])
@@ -73,7 +73,7 @@ def get_services():
 			services.append(item)
 		return jsonify(status=200, msg='get services success', data=services), 200
 	except Exception as e:
-		print e
+		print(e)
 	return jsonify(status=400, msg='get services error', data=None), 400
 
 
@@ -81,7 +81,7 @@ def get_services():
 def agent_register():
 	try:
 		ip=request.remote_addr
-		print 'register:'+ip
+		print('register:'+ip)
 		data = json.loads(request.get_data())
 		host_set=mongo.db.host_set
 		
@@ -98,7 +98,7 @@ def agent_register():
 		new['_id']=str(new['_id'])
 		return jsonify(status=200, msg='add success', data=new), 200
 	except Exception as e:
-		print e
+		print(e)
 	return jsonify(status=400, msg='add error', data=None), 400
 
 
