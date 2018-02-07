@@ -16,18 +16,29 @@ mongo = PyMongo(app)
 
 
 @app.route('/service',methods=['POST'])
-@require_json('image')
+# @require_json('image')
 def add_service():
-	try:
+	# try:
 		data = json.loads(request.get_data().decode('utf-8'))
 		image=data['image']
 		command=data.get('command')
 		kwargs=data.get('kwargs')
+
+		mode=kwargs.get('mode')
+		if mode:
+			new_mode=docker.types.ServiceMode(mode['mode'],mode['replicas'])
+			kwargs['mode']=new_mode
+
+		resources=kwargs.get('resources')
+		if resources:
+			new_resources=docker.types.Resources(**resources)
+			kwargs['resources']=new_resources
+
 		service=dockerClient.services.create(image, command=command, **kwargs)
 		return jsonify(status=200, msg='add service success', data={'id':service.short_id,'name':service.name}), 200
-	except Exception as e:
-		print(e)
-	return jsonify(status=400, msg='delete service error', data=None), 400
+	# except Exception as e:
+	# 	print(e)
+	# return jsonify(status=400, msg='delete service error', data=None), 400
 
 @app.route('/service/<id>',methods=['PUT'])
 def update_service(id):
@@ -38,14 +49,21 @@ def update_service(id):
 		return jsonify(status=400, msg='does not exist', data=None), 400
 	try:
 		kwargs=data.get('kwargs')
-		mode_obj=kwargs.pop('mode')
-		mode=docker.types.ServiceMode(mode_obj['mode'],mode_obj['replicas'])
-		kwargs['mode']=mode
+		mode=kwargs.get('mode')
+		if mode:
+			new_mode=docker.types.ServiceMode(mode['mode'],mode['replicas'])
+			kwargs['mode']=new_mode
+
+		resources=kwargs.get('resources')
+		if resources:
+			new_resources=docker.types.Resources(**resources)
+			kwargs['resources']=new_resources
+
 		res=service.update(**kwargs)
 		return jsonify(status=200, msg='update service success', data=None), 200
 	except Exception as e:
 		print(e)
-	return jsonify(status=400, msg='delete service error', data=None), 400
+	return jsonify(status=400, msg='update service error', data=None), 400
 
 @app.route('/service/<id>',methods=['DELETE'])
 def delete_service(id):
@@ -62,13 +80,19 @@ def delete_service(id):
 @app.route('/services',methods=['GET'])
 def get_services():
 	try:
-		kwargs=request.values
-		service_list=dockerClient.services.list(**kwargs)
+		args=request.args
+		filters={}
+		for k in args:
+			filters[k]=args.get(k)
+		print(filters)
+		service_list=dockerClient.services.list(filters=filters)
 		services=[]
 		for service in service_list:
 			item={
 				"id":service.short_id,
-				"name":service.name
+				"name":service.name,
+				"attrs":service.attrs,
+				"tasks":service.tasks()
 			}
 			services.append(item)
 		return jsonify(status=200, msg='get services success', data=services), 200

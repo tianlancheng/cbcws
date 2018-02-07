@@ -55,7 +55,8 @@ def get_container_info(container_obj):
 		"memory_usage": None,
 		"memory_limit": None,
 		"cpu_percent": None,
-		"online_cpus": None
+		"online_cpus": None,
+		"service_name": container_obj.labels.get('com.docker.swarm.service.name')
 	}
 	if container['state'] == 'running':
 		stats=container_obj.stats(stream=False)
