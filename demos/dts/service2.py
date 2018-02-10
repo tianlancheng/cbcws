@@ -76,7 +76,8 @@ def sendfile(filepath):
     if os.path.isfile(filepath):
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('service3-dts', 7003))
+        # s.connect(('service3-dts', 7003))
+        s.connect(('0.0.0.0', 7003))
         
 
         # 定义定义文件信息。128s表示文件名为128bytes长，l表示一个int或log文件类型，在此为文件大小

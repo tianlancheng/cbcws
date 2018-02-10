@@ -70,6 +70,7 @@ def sendfile(filepath):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(('service3-dtm', 7003))
+            # s.connect(('0.0.0.0', 7003))
         except socket.error as msg:
             logging.info(msg)
             sys.exit(1)
