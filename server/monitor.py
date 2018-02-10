@@ -38,14 +38,30 @@ def update_host(host,host_info):
 		host['update_time']=update_time
 		host_set.save(host)
 
+def ns(endTime,startTime):
+	t1= datetime.datetime.strptime(startTime.split('.')[0],"%Y-%m-%dT%H:%M:%S")
+	t2= datetime.datetime.strptime(endTime.split('.')[0],"%Y-%m-%dT%H:%M:%S")  
+	seconds1 = (t2 - t1).seconds
+	end1=len(startTime)-1
+	end2=len(endTime)-1
+	seconds2=float('0.'+endTime[20:end2])-float('0.'+startTime[20:end1])
+	return (seconds1+seconds2)*1000000000
+
 def update_containers(host_ip,containers):
 	update_time=datetime.datetime.now()
 	if containers:
 		for container in containers:
 			
 			item=container_set.find_one({'host_ip':host_ip,'id':container['id']})
+			container['cpu_percent']=0.0
 			if item:
-				container['_id']=item['_id']
+				if item['cpu_usuage_total'] and container['cpu_usuage_total']:
+					container['_id']=item['_id']
+					precpu_usage_total=item['cpu_usuage_total']
+					preread=item['read']
+					cpu_usage_total=container['cpu_usuage_total']
+					read=container['read']
+					container['cpu_percent']=(cpu_usage_total-precpu_usage_total)/ns(read,preread)
 			container['host_ip']=host_ip
 			container['update_time']=update_time
 			container['labels']=json.dumps(container['labels'])
@@ -58,7 +74,7 @@ def get_resource(host):
 	try:
 		r=requests.get('http://'+host['ip']+':'+str(host['port'])+'/resource')	
 		r=r.json()
-		print(host['host_name'],len(r['data']['containers']))
+		# print(host['host_name'],len(r['data']['containers']))
 	except Exception as e:
 		print(e)
 		print('can not connect to: '+host['ip'])
@@ -70,15 +86,15 @@ def get_resource(host):
 			update_host(host,data.get('host'))
 			update_containers(host['ip'],data.get('containers'))
 		else:
-			print('can not get resource: '+host['ip']+' '+r['msg'])
+			print('Error:can not get resource: '+host['ip']+' '+r['msg'])
 			host['state'] = 'unactive'
 			host_set.save(host)
 			container_set.remove({'host_id':host['ip']})
 	except Exception as e:
-		print(e)
+		print('Error:',e)
 	return host['ip']
 
-def scale_out(service_name,labels,host_ips,resouces):
+def scale_out(service,labels,host_ips,resouces):
 	step_size_cpu=labels.get('step_size_cpu')
 	if not step_size_cpu:
 		step_size_cpu=100000000
@@ -98,25 +114,27 @@ def scale_out(service_name,labels,host_ips,resouces):
 
 	new_cpu_limit=resources['NanoCPUs']
 	new_mem_limit=resources['MemoryBytes']
-	if cpu_percent>0.9:					
+	if cpu_percent>0.9:	
 		new_cpu_limit=old_cpu_limit+step_size_cpu
-	if memory_percent>0.9			
+	if memory_percent>0.9:
 		new_mem_limit=old_men_limit+step_size_mem
 	new_resource=docker.types.Resources(cpu_limit=new_cpu_limit,mem_limit=new_mem_limit)
 	res=service.update(resources=new_resource)
-	print('scale-out':res)
+	print('scale-out:',res)
 	return res
 
-def scale_up(service_name,labels,resources,n):
+def scale_up(service,labels,resources,n):
 	max_num=labels.get('max_num')
-	if n>=max_num:
-		print('service num reaches maximum')
-		return False
+	if max_num:
+		max_num=int(max_num)
+		if n>=max_num:
+			print('service num reaches maximum')
+			return False
 	flag=0
 	hosts=host_set.find()
 	for host in hosts:
 		remain_cpu=(1-host['cpu_percent']/100)-resources['NanoCPUs']/1000000000
-		if remain_cpu>0.2 and host['memory_free']-resources['MemoryBytes']>134217728:
+		if remain_cpu>0.2 and (host['memory_free']-resources['MemoryBytes'])>134217728:
 			flag=1
 			break
 	if not flag:
@@ -126,7 +144,7 @@ def scale_up(service_name,labels,resources,n):
 	new_mode=docker.types.ServiceMode('replicated',n)
 	res=service.update(mode=new_mode)
 	# m=container_set.find({'service_name':service_name}).count()
-	print('scale-up':res)
+	print('scale-up:',res)
 	return res
 
 def scale():
@@ -136,48 +154,49 @@ def scale():
 		}
 		service_list=dockerClient.services.list(filters=filters)
 		for service in service_list:
+			
 			labels=service.attrs['Spec']['Labels']
 			policy=labels['autoscale']
 			containers=container_set.find({'service_name':service.name})
+			
 			cpu_percnets=0
-			mem_usages=0
-			mem_limits=0
+			# mem_percnets=0
 			n=0
 			host_ips=set()
 			for container in containers:
-				if container['state']=='running':
+				if container['state']!='exited':
 					host_ips.add(container['host_ip'])
 					cpu_percnets=cpu_percnets+container['cpu_percent']
-					mem_limits=container['memory_limit']
-					mem_usages=container['mem_usage']
+					# mem_percnets=mem_percnets+container['memory_usage']/container['memory_limit']
 					n=n+1
+			print(service.name,n)
 			if n==0:
 				continue
-			cpu_avg_percent=cpu_percnets/n
-			mem_percent=mem_usages/memory_limits
+			cpu_avg_percent1=cpu_percnets/n
+			# mem_avg_percent=mem_percnets/n
 			resources=service.attrs['Spec']['TaskTemplate']['Resources']['Limits']
-			cpu_avg_percent=cpu_avg_percent/(resources['NanoCPUs']/1000000000)
-			print('cpu_avg:',cpu_avg_percent)
-			print('mem_avg:',memory_percent)
+			cpu_avg_percent=cpu_avg_percent1/(resources['NanoCPUs']/1000000000)
+			print('cpu_avg:',cpu_avg_percent1,cpu_avg_percent)
+			# print('mem_avg:',mem_avg_percent)
 
-			if cpu_percent>0.9 or memory_percent>0.9:
+			if cpu_avg_percent>0.8:
 				if policy == 'scale-out':
 					print('start scale-out')
-					scale_out(service.name,labels,host_ips,resources)
+					scale_out(service,labels,host_ips,resources)
 
 				elif policy == 'scale-up':
 					print('start scale-up')
-					scale_up(service.name,labels,resources,n)
+					scale_up(service,labels,resources,n)
 
 				elif policy == 'scale-out-up':
 					print('start scale-out-up')
 					res=scale_out(service.name,labels,host_ips,resources)
 					if not res:
 						scale_up(service.name,labels,resources,n)
-				time.sleep(1)
+				# time.sleep(0.5)
 
 	except Exception as e:
-		print(e)
+		print('Error:',e)
 
 
 def cycle():
@@ -191,8 +210,8 @@ def cycle():
 			results = wait(future_tasks)
 		scale()
 	print(time.time()-t1)
-	print
-	t = Timer(1,cycle)
+	print()
+	t = Timer(3,cycle)
 	t.start()
 
 if __name__ == '__main__':

@@ -15,6 +15,8 @@ app.config['myport']=5001
 
 dockerClient=docker.DockerClient(base_url='unix://var/run/docker.sock', version='1.35')
 
+
+
 def ns(endTime,startTime):
 	t1= datetime.datetime.strptime(startTime.split('.')[0],"%Y-%m-%dT%H:%M:%S")
 	t2= datetime.datetime.strptime(endTime.split('.')[0],"%Y-%m-%dT%H:%M:%S")  
@@ -54,21 +56,25 @@ def get_container_info(container_obj):
 		"labels": container_obj.labels,
 		"memory_usage": None,
 		"memory_limit": None,
-		"cpu_percent": None,
+		"cpu_usuage_total": None,
+		"read": None,
 		"online_cpus": None,
 		"service_name": container_obj.labels.get('com.docker.swarm.service.name')
 	}
 	if container['state'] == 'running':
 		stats=container_obj.stats(stream=False)
-		precpu_usage_total=stats['precpu_stats']['cpu_usage']['total_usage']
-		cpu_usage_total=stats['cpu_stats']['cpu_usage']['total_usage']
-		preread_time=stats['preread']
-		read_time=stats['read']
-		cpu_percent=(cpu_usage_total-precpu_usage_total)/ns(read_time,preread_time)
+		
+		# precpu_usage_total=stats['precpu_stats']['cpu_usage']['total_usage']
+		# cpu_usage_total=stats['cpu_stats']['cpu_usage']['total_usage']
+		# preread_time=stats['preread']
+		# read_time=stats['read']
+		# cpu_percent=(cpu_usage_total-precpu_usage_total)/ns(read_time,preread_time)
+		# container['cpu_percent']=cpu_percent
 
+		container['cpu_usuage_total']=stats['cpu_stats']['cpu_usage']['total_usage']
+		container['read']=stats['read']
 		container['memory_usage']=stats['memory_stats']['usage']
-		container['memory_limit']=stats['memory_stats']['limit']
-		container['cpu_percent']=cpu_percent
+		container['memory_limit']=stats['memory_stats']['limit']	
 		container['online_cpus']=stats['cpu_stats']['online_cpus']
 
 	return container
