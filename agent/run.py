@@ -63,19 +63,23 @@ def get_container_info(container_obj):
 	}
 	if container['state'] == 'running':
 		stats=container_obj.stats(stream=False)
-		
-		# precpu_usage_total=stats['precpu_stats']['cpu_usage']['total_usage']
-		# cpu_usage_total=stats['cpu_stats']['cpu_usage']['total_usage']
-		# preread_time=stats['preread']
-		# read_time=stats['read']
-		# cpu_percent=(cpu_usage_total-precpu_usage_total)/ns(read_time,preread_time)
-		# container['cpu_percent']=cpu_percent
+		try:
+			# precpu_usage_total=stats['precpu_stats']['cpu_usage']['total_usage']
+			# cpu_usage_total=stats['cpu_stats']['cpu_usage']['total_usage']
+			# preread_time=stats['preread']
+			# read_time=stats['read']
+			# cpu_percent=(cpu_usage_total-precpu_usage_total)/ns(read_time,preread_time)
+			# container['cpu_percent']=cpu_percent
 
-		container['cpu_usuage_total']=stats['cpu_stats']['cpu_usage']['total_usage']
-		container['read']=stats['read']
-		container['memory_usage']=stats['memory_stats']['usage']
-		container['memory_limit']=stats['memory_stats']['limit']	
-		container['online_cpus']=stats['cpu_stats']['online_cpus']
+			container['cpu_usuage_total']=stats['cpu_stats']['cpu_usage']['total_usage']
+			container['read']=stats['read']
+			# container['memory_usage']=stats['memory_stats']['usage']
+			# container['memory_limit']=stats['memory_stats']['limit']	
+			container['online_cpus']=stats['cpu_stats']['online_cpus']
+		except:
+			container['cpu_usuage_total']=None
+			container['read']=None
+			container['online_cpus']=None
 
 	return container
 
@@ -120,7 +124,7 @@ def register_to_server():
 
 if __name__ == '__main__':
 	if register_to_server():
-		app.run(host='0.0.0.0',port=app.config['myport'],debug=False,threaded=True)
+		app.run(host='0.0.0.0',port=app.config['myport'],debug=True,threaded=True)
 	else:
 		print('register to server error')
 

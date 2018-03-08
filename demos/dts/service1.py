@@ -26,16 +26,22 @@ def socket_service():
     logging.info('Waiting connection...')
 
     while 1:
-        conn, addr = s.accept()
-        buf = conn.recv(struct.calcsize('128sl'))
-        if buf:
-            filename, filesize = struct.unpack('128sl', buf)
-            if filename == 'stop':
+        try:
+            conn, addr = s.accept()
+            buf = conn.recv(struct.calcsize('128sl'))
+            if buf:
+                filename, filesize = struct.unpack('128sl', buf)
+                if filename.startswith('stop'):
+                    logging.info('stop')
+                    conn.send('ok')
+                    conn.close()
+                    break
+                deal_data(conn,filename, filesize)
+            else:
                 conn.close()
-                time.sleep(2)
-                break
-            deal_data(conn,filename, filesize)
-        else:
+        except Exception,e:
+            logging.info('Error:')
+            logging.info(e)
             conn.close()
 
 def deal_data(conn,filename, filesize):
@@ -58,40 +64,48 @@ def deal_data(conn,filename, filesize):
                 recvd_size = filesize
             fp.write(data)
         fp.close()
+        conn.send('success')
         conn.close()
-        res=convert(new_filename)
-        try:
-            sendfile(res)
-        except:
-            logging('Error,retry send')
-            time.sleep(0.5)
-            sendfile(res)
-        logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
     except Exception,e:
+        conn.close()
+        logging.info('receive error:')
         logging.info(e)
+    res=convert(new_filename)
+
+    sendfile(res)
+
+    logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
 
 
 def sendfile(filepath):
     if os.path.isfile(filepath):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('service2-dts', 7002))
-        # s.connect(('0.0.0.0', 7002))
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('service2-dts', 7002))
+            # s.connect(('0.0.0.0', 7002))
 
 
-        # 定义定义文件信息。128s表示文件名为128bytes长，l表示一个int或log文件类型，在此为文件大小
-        fileinfo_size = struct.calcsize('128sl')
-        # 定义文件头信息，包含文件名和文件大小
-        fhead = struct.pack('128sl', os.path.basename(filepath),
-                            os.stat(filepath).st_size)
-        s.send(fhead)
+            # 定义定义文件信息。128s表示文件名为128bytes长，l表示一个int或log文件类型，在此为文件大小
+            fileinfo_size = struct.calcsize('128sl')
+            # 定义文件头信息，包含文件名和文件大小
+            fhead = struct.pack('128sl', os.path.basename(filepath),
+                                os.stat(filepath).st_size)
+            s.send(fhead)
 
-        fp = open(filepath, 'rb')
-        while 1:
-            data = fp.read(1024)
-            if not data:
-                break
-            s.send(data)
-        s.close()
+            fp = open(filepath, 'rb')
+            while 1:
+                data = fp.read(1024)
+                if not data:
+                    break
+                s.send(data)
+            s.recv(1024)
+            s.close()
+        except Exception,e:         
+            logging.info('send error:')
+            logging.info(e)
+            s.close()
+            time.sleep(2)
+            sendfile(filepath)
 
 
 def convert(img_path):

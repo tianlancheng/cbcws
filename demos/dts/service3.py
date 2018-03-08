@@ -27,18 +27,24 @@ def socket_service():
     logging.info('Waiting connection...')
 
     while 1:
-        conn, addr = s.accept()
-        buf = conn.recv(struct.calcsize('128sl'))
-        if buf:
-            filename, filesize = struct.unpack('128sl', buf)
-            if filename == 'stop':
+        try:
+            conn, addr = s.accept()
+            buf = conn.recv(struct.calcsize('128sl'))
+            if buf:
+                filename, filesize = struct.unpack('128sl', buf)
+                if filename.startswith('stop'):
+                    logging.info('stop')
+                    conn.send('ok')
+                    conn.close()
+                    break
+                deal_data(conn,filename, filesize)
+            else:
                 conn.close()
-                time.sleep(2)
-                break
-            deal_data(conn,filename, filesize)
-        else:
+        except Exception,e:
+            logging.info('Error:')
+            logging.info(e)
             conn.close()
-        # time.sleep(0.1)
+
 
 def deal_data(conn,filename, filesize):
     #conn.settimeout(500)
@@ -60,11 +66,16 @@ def deal_data(conn,filename, filesize):
                 recvd_size = filesize
             fp.write(data)
         fp.close()
+        conn.send('success')
         conn.close()
-        text_watermark(new_filename,new_filename)
-        logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
-    except Exception,e:
+    except Exception,e:       
+        logging.info('receive error:')
         logging.info(e)
+        conn.close()
+        
+    text_watermark(new_filename,new_filename)
+    logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
+
 
 
 def text_watermark(img_path, out_path, text="logo",angle=23, opacity=0.50):  

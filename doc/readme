@@ -57,13 +57,23 @@ docker swarm init --listen-addr 192.168.33.10:2377 --advertise-addr 192.168.33.1
 6.启动测试服务
 docker network create -d overlay test
 
+#dts
 docker service create --name service1-dts -l autoscale="scale-up" -l max_num=5 --constraint 'node.role==worker' -p 7001:7001 --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service1.py
 docker service create --name service2-dts -l autoscale="scale-up" -l max_num=5 --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service2.py
 docker service create --name service3-dts -l autoscale="scale-up" -l max_num=5 --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service3.py
 
-docker service create --name service1-dtm --constraint 'node.role==worker' -p 7001:7001 --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service1.py
-docker service create --name service2-dtm --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service2.py
-docker service create --name service3-dtm --constraint 'node.role==worker' --replicas 1 --limit-memory 134217728 --limit-cpu 0.1 --network test --restart-condition none demo:dtm python service3.py
+docker service create --name service1-dts -l autoscale="scale-out"  --constraint 'node.role==worker' -p 7001:7001 --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service1.py
+docker service create --name service2-dts -l autoscale="scale-out"  --constraint 'node.role==worker' -p 7002:7002 --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service2.py
+docker service create --name service3-dts -l autoscale="scale-out"  --constraint 'node.role==worker' -p 7003:7003 --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:dts python service3.py
+
+#nts
+docker service create --name service1-nts -l autoscale="scale-up" -l max_num=5 --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service1.py
+docker service create --name service2-nts -l autoscale="scale-up" -l max_num=5 --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service2.py
+docker service create --name service3-nts -l autoscale="scale-up" -l max_num=5 --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service3.py
+
+docker service create --name service1-nts -l autoscale="scale-out"  --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service1.py
+docker service create --name service2-nts -l autoscale="scale-out" --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service2.py
+docker service create --name service3-nts -l autoscale="scale-out" --mount type=volume,source=nfs-volume,destination=/nfs-data --constraint 'node.role==worker' --replicas 1 --limit-memory 67108864 --limit-cpu 0.1 --network test --restart-condition none demo:nts python service3.py
 
 
 For cbcws worker

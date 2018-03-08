@@ -18,22 +18,23 @@ rcon = redis.Redis(connection_pool=pool)
 
 def listen_task():
     logging.info('waiting task...')
-    while True:
-        task = rcon.blpop('service3:queue', 0)[1]
-        if task=='stop':
-            break
-        deal_data(task)
+    signal=rcon.get('service3-nts')
+    while signal!='stop':
+        try:
+            task = rcon.brpop('service3:queue', 0)[1]          
+            deal_data(task)
+            signal=rcon.get('service3-nts')
+        except Exception,e:
+            logging.info(e)
+    rcon.set('service3-nts','start')
 
 def deal_data(img_path):
-    try:
         t1=time.time()
         filename=os.path.basename(img_path)
         outfile='/nfs-data/service3/'+filename
         outfile = os.path.splitext(outfile)[0] + ".jpg"  
         text_watermark(img_path,outfile)
         logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
-    except Exception,e:
-        logging.info(e)
 
  
 def text_watermark(img_path, out_path, text="logo",angle=23, opacity=0.50):  

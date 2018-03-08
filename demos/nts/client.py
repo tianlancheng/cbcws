@@ -4,6 +4,7 @@ import redis
 import time
 import os
 import shutil
+import sys
 
 import logging
 LOG_FORMAT = "%(message)s"
@@ -20,12 +21,15 @@ def send(i):
         out_file='/nfs-data/input/'+filename
         shutil.copyfile(filepath, out_file)
         rcon.lpush('service1:queue', out_file)
-        logging.info(filename)
+        print(filename)
 
 if __name__ == '__main__':
+    rcon.lpush('service1', 'start')
+    rcon.lpush('service2', 'start')
+    rcon.lpush('service3', 'start')
     num=int(sys.argv[1])
     t=float(sys.argv[2])
-    logging.info('num={},t={}'.format(num,t))
+    print('num={},t={}'.format(num,t))
     i=1
     while(i<=num):
         send(i)

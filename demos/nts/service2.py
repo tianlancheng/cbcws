@@ -19,15 +19,17 @@ rcon = redis.Redis(connection_pool=pool)
 
 def listen_task():
     logging.info('waiting task...')
-    while True:
-        task = rcon.blpop('service2:queue', 0)[1]
-        if task=='stop':
-            break
-        deal_data(task)
-
+    signal=rcon.get('service2-nts')
+    while signal!='stop':
+        try:
+            task = rcon.brpop('service2:queue', 0)[1]          
+            deal_data(task)
+            signal=rcon.get('service2-nts')
+        except Exception,e:
+            logging.info(e)
+    rcon.set('service2-nts','start')
 
 def deal_data(img_path):
-    try:
         t1=time.time()
         filename=os.path.basename(img_path)
         outfile='/nfs-data/service2/'+filename
@@ -35,8 +37,7 @@ def deal_data(img_path):
         filter(img_path,outfile)
         rcon.lpush('service3:queue', outfile)
         logging.info('{} {:.3f} {:.3f}'.format(filename,time.time(),time.time()-t1))
-    except Exception,e:
-        logging.info(e)
+
 
 def filter(img_path,outfile):
     img=Image.open(img_path)
